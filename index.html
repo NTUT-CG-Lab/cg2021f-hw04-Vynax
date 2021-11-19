@@ -27,7 +27,7 @@
     <script>
         // 建構子 ScoreOutputer 接受一個字串，該字串為 csv 的檔案名稱
         // 以下面範例，檔名就為 "109598105(總分: 6).csv"
-        var so = new ScoreOutputer("109598105");
+        var so = new ScoreOutputer("109598085");
         so.installCSS(function () {
             // 安裝 bootstrap 的 css，如果在 html 上方引用 bootstrap 5.1.1 的話就不用使用 installCSS ，注意一定要 bootstrap css 5.1.1 版
             // installCSS 接收一個 callback 當作參數，作為成功安裝 bootstrap css 的回呼函式
@@ -40,9 +40,9 @@
             //addChild 要比 renderModal 先呼叫
             so.addChild("建立標準GUI", 2, true);
             so.addChild("回答問題", 2, false);
-            so.addChild("當GUI的數值改變時，須將數值記錄起來", 2, false);
-            so.addChild("可使用按鍵P顯示目前紀錄的值", 1, false);
-            so.addChild("紀錄的數值儲存為JSON檔", 1, false);
+            so.addChild("當GUI的數值改變時，須將數值記錄起來", 2, true);
+            so.addChild("可使用按鍵P顯示目前紀錄的值", 1, true);
+            so.addChild("紀錄的數值儲存為JSON檔", 2, false);
             so.addChild("可按鍵選擇上 / 下一隻角色，角色morph也要改變", 1, false);
 
             //產生自評表，參數如下所示
@@ -85,8 +85,28 @@
 
         let camera, scene, renderer, effect;
         let mesh, helper;
+        let textarray = ['eyebrow_troubled_left', 'eyebrow_troubled_right', 'eyebrow_angry_left', 'eyebrow_angry_right'
+            , 'eyebrow_serious_left', 'eyebrow_serious_right', 'eyebrow_happy_left', 'eyebrow_happy_right', 'eyebrow_lowered_left', 'eyebrow_lowered_right'
+            , 'eyebrow_raised_left', 'eyebrow_raised_right', 'eye_wink_left', 'eye_wink_right', 'eye_happy_wink_left', 'eye_happy_wink_right', 'eye_relaxed_left'
+            , 'eye_relaxed_right', 'eye_unimpressed_left', 'eye_unimpressed_right', 'eye_raised_lower_eyelid_left', 'eye_raised_lower_eyelid_right', 'eye_surprised_left'
+            , 'eye_surprised_right', 'iris_small_left', 'iris_small_right', 'mouth_aaa', 'mouth_iii', 'mouth_uuu', 'mouth_eee', 'mouth_ooo', 'mouth_delta', 'mouth_smirk'
+            , 'mouth_raised_corner_left', 'mouth_raised_corner_right', 'mouth_lowered_corner_left', 'mouth_lowered_corner_right'];
+
+        let standardlist = {
+            eyebrow_troubled_left: 0, eyebrow_troubled_right: 0, eyebrow_angry_left: 0, eyebrow_angry_right: 0,
+            eyebrow_serious_left: 0, eyebrow_serious_right: 0, eyebrow_happy_left: 0, eyebrow_happy_right: 0,
+            eyebrow_lowered_left: 0, eyebrow_lowered_right: 0, eyebrow_raised_left: 0, eyebrow_raised_right: 0,
+            eye_wink_left: 0, eye_wink_right: 0, eye_happy_wink_left: 0, eye_happy_wink_right: 0,
+            eye_relaxed_left: 0, eye_relaxed_right: 0, eye_unimpressed_left: 0, eye_unimpressed_right: 0,
+            eye_raised_lower_eyelid_left: 0, eye_raised_lower_eyelid_right: 0, eye_surprised_left: 0,
+            eye_surprised_right: 0, iris_small_left: 0, iris_small_right: 0,
+            mouth_aaa: 0, mouth_iii: 0, mouth_uuu: 0, mouth_eee: 0, mouth_ooo: 0, mouth_delta: 0,
+            mouth_smirk: 0,
+            mouth_raised_corner_left: 0, mouth_raised_corner_right: 0, mouth_lowered_corner_left: 0, mouth_lowered_corner_right: 0
+        };
 
         const vpds = [];
+        let stdlocal = [];
 
         Ammo().then(function (AmmoLib) {
 
@@ -94,7 +114,7 @@
 
             init();
             animate();
-
+            initGui2();
         });
 
         function init() {
@@ -223,11 +243,11 @@
                 }
 
                 function initControls() {
-
+                    let count = 0;
                     for (const key in dictionary) {
 
-                        controls[key] = 0.0;
-
+                        controls[count.toString() + '.' + key] = 0.0;
+                        count++;
                     }
 
                     controls.pose = - 1;
@@ -241,11 +261,11 @@
                 }
 
                 function initKeys() {
-
+                    let count = 0;
                     for (const key in dictionary) {
 
-                        keys.push(key);
-
+                        keys.push(count.toString() + '.' + key);
+                        count++;
                     }
 
                 }
@@ -265,11 +285,11 @@
                 }
 
                 function initMorphs() {
-
+                    let count = 0;
                     for (const key in dictionary) {
 
-                        morphs.add(controls, key, 0.0, 1.0, 0.01).onChange(onChangeMorph);
-
+                        morphs.add(controls, count.toString() + '.' + key, 0.0, 1.0, 0.01).onChange(onChangeMorph);
+                        count++;
                     }
 
                 }
@@ -314,7 +334,49 @@
                 morphs.open();
 
             }
+            document.addEventListener('keypress', onDocumentKeyPress);
 
+        }
+
+        function initGui2() {
+
+            const gui2 = new GUI();
+
+            const controls = {};
+            const stdlist = gui2.addFolder('stdlist');
+            for (const key in standardlist) {
+                controls[key] = -1;
+            }
+            for (const key in standardlist) {
+                stdlist.add(controls, key).onChange(onChangeLocal);
+            }
+            for (let i = 0; i < textarray.length; i++) {
+                stdlocal[i] = -1;
+            }
+            function onChangeLocal() {
+                for (let i = 0; i < textarray.length; i++) {
+                    let key = textarray[i];
+                    let value = controls[key];
+                    stdlocal[i] = value;
+                }
+            }
+            stdlist.open();
+        }
+
+        function onDocumentKeyPress(event) {
+
+            const keyCode = event.which;
+
+            const ch = String.fromCharCode(keyCode);
+            switch (ch) {
+                case 'P':
+                case 'p':
+                    for (let i = 0; i < textarray.length; i++) {
+                        console.log(textarray[i], stdlocal[i]);
+                    }
+                    console.log("#############");
+                    break;
+            }
         }
 
         function onWindowResize() {
